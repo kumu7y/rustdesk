@@ -2,7 +2,6 @@ import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:get/get.dart';
-import 'native_model.dart' if (dart.library.html) 'web_model.dart';
 
 import '../consts.dart';
 import './platform_model.dart';
@@ -83,7 +82,7 @@ class StateGlobal {
   }
 
   procFullscreenWeb() {
-    final isFullscreen = PlatformFFI.getByName('fullscreen') == 'Y';
+    final isFullscreen = ffiGetByName('fullscreen') == 'Y';
     String fullscreenValue = '';
     if (isFullscreen && _fullscreen.isFalse) {
       fullscreenValue = 'N';
@@ -91,7 +90,7 @@ class StateGlobal {
       fullscreenValue = 'Y';
     }
     if (fullscreenValue.isNotEmpty) {
-      PlatformFFI.setByName('fullscreen', fullscreenValue);
+      ffiSetByName('fullscreen', fullscreenValue);
     }
   }
 
@@ -102,15 +101,8 @@ class StateGlobal {
     if (procWnd) {
       final wc = WindowController.fromWindowId(windowId);
       wc.setFullscreen(_fullscreen.isTrue).then((_) {
-        // https://github.com/leanflutter/window_manager/issues/131#issuecomment-1111587982
-        if (isWindows && _fullscreen.isFalse) {
-          Future.delayed(Duration.zero, () async {
-            final frame = await wc.getFrame();
-            final newRect = Rect.fromLTWH(
-                frame.left, frame.top, frame.width + 1, frame.height + 1);
-            await wc.setFrame(newRect);
-          });
-        }
+        // We remove the redraw (width + 1, height + 1), because this issue cannot be reproduced.
+        // https://github.com/rustdesk/rustdesk/issues/9675
       });
     }
   }
